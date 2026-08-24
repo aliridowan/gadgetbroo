@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { checkPermission } from "@/lib/rbac";
+import { ShippingZoneService } from "@/lib/services/shippingZoneService";
 
 export async function GET(req: NextRequest) {
   try {
-    const zones = await prisma.shippingZone.findMany({
-      orderBy: [
-        { stateName: 'asc' },
-        { cityName: 'asc' }
-      ]
-    });
+    // Was previously unauthenticated — this route can create/update/delete
+    // zones too (see POST below and [id]/route.ts), so it's not just a
+    // read gate here for consistency, it's closing an actual open write
+    // hole. Matches the "Shipping" resource Sidebar.tsx already declares.
+    const session = await checkPermission("Shipping", "canView");
+    if (!session) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+
+    const zones = await ShippingZoneService.getAllZones();
     return NextResponse.json({ success: true, data: zones });
   } catch (error: unknown) {
     console.error("Error fetching shipping zones:", error);
@@ -18,6 +21,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await checkPermission("Shipping", "canCreate");
+    if (!session) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+
     const body = await req.json();
     const { stateName, cityName, deliveryFee, isActive } = body;
 
@@ -25,13 +31,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
-    const zone = await prisma.shippingZone.create({
-      data: {
-        stateName,
-        cityName,
-        deliveryFee: parseFloat(deliveryFee),
-        isActive: isActive !== undefined ? isActive : true,
-      }
+    const zone = await ShippingZoneService.createZone({
+      stateName,
+      cityName,
+      deliveryFee: parseFloat(deliveryFee),
+      isActive,
     });
 
     return NextResponse.json({ success: true, data: zone });

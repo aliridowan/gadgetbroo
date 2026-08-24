@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { checkPermission } from "@/lib/rbac";
 import prisma from "@/lib/prisma";
 import { posCheckoutSchema } from "@/zodSchemas/posSchema";
+import { OrderService } from "@/lib/services/orderService";
 
 export async function POST(req: Request) {
   try {
@@ -32,61 +33,12 @@ export async function POST(req: Request) {
 
     // Wrap everything in a Prisma transaction for hard-allocation (No Overselling)
     const order = await prisma.$transaction(async (tx) => {
-      let subtotalCents = 0;
-      const orderItemsData = [];
+      // 1. Verify stock and atomically lock inventory for each item — shared
+      // with /api/checkout, see OrderService.reserveStockAndBuildItems for
+      // why this has to be an atomic guarded decrement, not a separate
+      // check-then-write.
+      const { orderItemsData, subtotalCents } = await OrderService.reserveStockAndBuildItems(tx, items);
 
-      // 1. Verify stock and lock inventory for each item
-      for (const item of items) {
-        // Fetch current variant and product info
-        const variant = await tx.productVariant.findUnique({
-          where: { id: item.variantId },
-          include: {
-            product: {
-              include: {
-                images: {
-                  where: { isPrimary: true },
-                  include: { mediaFile: true },
-                  take: 1
-                }
-              }
-            }
-          }
-        });
-
-        if (!variant || variant.isDeleted || !variant.isActive || !variant.product.isActive) {
-          throw new Error(`Product variant ${item.variantId} is no longer available.`);
-        }
-
-        if (variant.stock < item.quantity) {
-          throw new Error(
-            `Out of stock: ${variant.product.name}. Only ${variant.stock} left in stock, but you requested ${item.quantity}.`
-          );
-        }
-
-        // Deduct stock
-        await tx.productVariant.update({
-          where: { id: variant.id },
-          data: { stock: variant.stock - item.quantity },
-        });
-
-        // Calculate subtotal securely using integer math (cents/poisha) to avoid JS floating-point precision loss
-        const priceCents = Math.round(Number(variant.price) * 100);
-        subtotalCents += priceCents * item.quantity;
-
-        // Take Snapshot of the item
-        const primaryImage = variant.product.images[0]?.mediaFile.url || null;
-
-        orderItemsData.push({
-          variantId: variant.id,
-          quantity: item.quantity,
-          priceAtOrder: priceCents / 100,
-          productName: variant.product.name,
-          variantName: variant.name !== "Default" ? variant.name : "Standard Edition",
-          skuAtOrder: variant.sku,
-          imageSnapshot: primaryImage,
-        });
-      }
-      
       // Look up Shipping Zone fee for the resolved location
       const shippingZone = await tx.shippingZone.findUnique({
         where: {
@@ -113,10 +65,20 @@ export async function POST(req: Request) {
       
       const fullAddress = `${customerAddress}, ${city}, ${state}`;
       
-      // Determine Payment Status based on POS payment method
-      const paymentStatus = paymentMethod === "CASH" || paymentMethod === "MANUAL_BKASH" ? "PAID" : "UNPAID";
-      // Determine Order Status based on POS context (usually they take it right away, or processing)
-      const orderStatus = "CONFIRMED"; // Or DELIVERED if it's instant
+      // Determine Payment Status based on POS payment method — all three
+      // are staff-witnessed, collected on the spot (cash in hand, a bKash
+      // transfer confirmed in person, or a physical card terminal), so all
+      // three are immediately PAID. Unlike the storefront's own BKASH/CARD
+      // options (customer-initiated online, no live gateway, stay UNPAID
+      // until an admin manually confirms), there's no "wait and verify"
+      // step here — the sale already happened in front of staff.
+      const paymentStatus = paymentMethod === "CASH" || paymentMethod === "MANUAL_BKASH" || paymentMethod === "MANUAL_CARD" ? "PAID" : "UNPAID";
+      // POS orders always start CONFIRMED, not DELIVERED — POS isn't only
+      // instant walk-in handoff, it's also used for orders sourced from
+      // Facebook/Instagram entered in-shop, which still need normal
+      // fulfillment tracking. Staying non-terminal keeps them manageable
+      // through the same order-detail page as any other order.
+      const orderStatus = "CONFIRMED";
 
       // Check if user already exists based on phone to prevent duplicates, or use guest logic
       // But actually, POS shouldn't fail if user doesn't exist. It can create an Address connected to the admin placing the order, or create an inline address for the order.
@@ -142,6 +104,27 @@ export async function POST(req: Request) {
             create: orderItemsData
           }
         }
+      });
+
+      // Snapshot who actually rang up this sale — not just the FK, since a
+      // shop can have multiple salespeople and this is meant to support
+      // per-employee sales tracking later. Snapshotting name/email here
+      // means that tracking stays accurate even if the account's name
+      // later changes, same reasoning as the OrderItem price/name snapshots.
+      await tx.auditLog.create({
+        data: {
+          actorId: session.user.id,
+          action: "POS_ORDER_CREATED",
+          entity: "Order",
+          entityId: newOrder.id,
+          metadata: {
+            actorName: session.user.name,
+            actorEmail: session.user.email,
+            itemCount: orderItemsData.length,
+            totalUnits: orderItemsData.reduce((sum, i) => sum + i.quantity, 0),
+            total,
+          },
+        },
       });
 
       return newOrder;

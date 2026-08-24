@@ -45,7 +45,10 @@ export const PaymentMethod = {
   STRIPE: 'STRIPE',
   CASH_ON_DELIVERY: 'CASH_ON_DELIVERY',
   CASH: 'CASH',
-  MANUAL_BKASH: 'MANUAL_BKASH'
+  MANUAL_BKASH: 'MANUAL_BKASH',
+  BKASH: 'BKASH',
+  CARD: 'CARD',
+  MANUAL_CARD: 'MANUAL_CARD'
 } as const
 
 export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod]

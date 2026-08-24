@@ -4,6 +4,8 @@ import { Prisma } from "../../../../../src/generated/prisma/client";
 import { MediaService } from "@/lib/services/mediaService";
 import { updateProductSchema } from "../../../../../zodSchemas/productSchema";
 import { checkPermission } from "../../../../../lib/rbac";
+import { ProductService } from "../../../../../lib/services/productService";
+import { sanitizeHtml } from "../../../../../lib/sanitizeHtml";
 
 
 export async function GET(
@@ -15,16 +17,7 @@ export async function GET(
     if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { id } = await params;
-    const product = await prisma.product.findUnique({
-      where: { id },
-      include: {
-        variants: { where: { isDeleted: false } },
-        images: {
-          include: { mediaFile: true },
-          orderBy: { isPrimary: "desc" },
-        }
-      }
-    });
+    const product = await ProductService.getProductById(id);
 
     if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
     return NextResponse.json({ product });
@@ -48,6 +41,13 @@ export async function PATCH(
     if (!result.success) return NextResponse.json({ error: result.error.issues[0].message }, { status: 400 });
 
     const { variants, ...productData } = result.data;
+
+    // Same write-time sanitization as product creation — this is a partial
+    // update, so only touch it if this particular PATCH actually included a
+    // description.
+    if (productData.description !== undefined) {
+      productData.description = sanitizeHtml(productData.description);
+    }
 
     if (productData.slug) {
       const existing = await prisma.product.findUnique({ where: { slug: productData.slug } });

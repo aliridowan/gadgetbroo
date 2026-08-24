@@ -7,7 +7,7 @@ export const posCheckoutSchema = z.object({
   state: z.string().min(1, "State is required"),
   city: z.string().min(1, "City is required"),
   
-  paymentMethod: z.enum(["CASH", "MANUAL_BKASH", "STRIPE"]),
+  paymentMethod: z.enum(["CASH", "MANUAL_BKASH", "MANUAL_CARD"]),
   discount: z.number().min(0, "Discount cannot be negative").default(0),
   
   items: z.array(

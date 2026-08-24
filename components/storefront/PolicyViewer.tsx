@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { sanitizeHtml } from '@/lib/sanitizeHtml';
 
 interface PolicyViewerProps {
   title: { en: string, bn: string };
@@ -44,7 +45,7 @@ export default function PolicyViewer({ title, contentEn, contentBn }: PolicyView
       {/* Content */}
       <div 
         className="prose prose-invert prose-blue max-w-none prose-headings:text-white prose-a:text-blue-400 hover:prose-a:text-blue-300"
-        dangerouslySetInnerHTML={{ __html: content || `<p>Content not available in this language yet.</p>` }}
+        dangerouslySetInnerHTML={{ __html: content ? sanitizeHtml(content) : `<p>Content not available in this language yet.</p>` }}
       />
 
     </div>

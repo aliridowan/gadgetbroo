@@ -1,27 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
 import { checkPermission } from "@/lib/rbac";
 import { storeSettingsSchema } from "@/zodSchemas/storeSettingsSchema";
+import { StoreSettingsService } from "@/lib/services/storeSettingsService";
 
 export async function GET() {
   try {
     const session = await checkPermission("Settings", "canView");
     if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    let settings = await prisma.storeSettings.findUnique({
-      where: { id: "global" },
-    });
-
-    if (!settings) {
-      settings = await prisma.storeSettings.create({
-        data: {
-          id: "global",
-          contactEmail: "mahamudul.dev@gmail.com",
-          contactPhone: "+8801881835612",
-          contactAddress: "Brothers Computer Zone, Sachibunia Bazar, Lobonchora,\nKhulna",
-        },
-      });
-    }
+    const settings = await StoreSettingsService.getSettings();
 
     return NextResponse.json({ settings });
   } catch (error) {
@@ -46,26 +33,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { bannerUrl, faviconUrl, contactEmail, contactPhone, contactAddress } = validationResult.data;
-
-    const settings = await prisma.storeSettings.upsert({
-      where: { id: "global" },
-      update: {
-        bannerUrl,
-        faviconUrl,
-        contactEmail,
-        contactPhone,
-        contactAddress,
-      },
-      create: {
-        id: "global",
-        bannerUrl,
-        faviconUrl,
-        contactEmail,
-        contactPhone,
-        contactAddress,
-      },
-    });
+    const settings = await StoreSettingsService.saveSettings(validationResult.data);
 
     return NextResponse.json({ success: true, settings });
   } catch (error) {

@@ -1,27 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { checkPermission } from "@/lib/rbac";
+import { NextResponse } from "next/server";
 
-export async function PATCH(request: NextRequest) {
-  try {
-    const session = await checkPermission("Orders", "canUpdate");
-    if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-    const body = await request.json();
-    const { ids, status } = body;
-
-    if (!ids || !Array.isArray(ids) || !status) {
-      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
-    }
-
-    const updated = await prisma.order.updateMany({
-      where: { id: { in: ids } },
-      data: { status: status as import("@/src/generated/prisma/client").OrderStatus },
-    });
-
-    return NextResponse.json({ success: true, count: updated.count });
-  } catch (error) {
-    console.error("Orders Bulk PATCH error:", error);
-    return NextResponse.json({ error: "Failed to update orders" }, { status: 500 });
-  }
+/**
+ * PATCH /api/orders/bulk-status — disabled.
+ *
+ * This used to blindly `updateMany` a status onto every selected order,
+ * with no per-order state check, no restock logic, and no audit log entry
+ * — meaning it could silently overwrite an already-CANCELLED/DELIVERED/
+ * REFUNDED order's status and desync inventory, completely bypassing the
+ * guarded single-order transition in OrderService.transitionStatus.
+ *
+ * Refusing here (not just hiding the bulk UI in OrdersClient) so a direct
+ * API call can't use it either. Re-enable only once it's rebuilt as a loop
+ * over OrderService.transitionStatus per order, so each one gets the same
+ * atomic guard and restock/audit handling as a single-order update.
+ */
+export async function PATCH() {
+  return NextResponse.json(
+    { error: "Bulk order status updates are temporarily disabled. Update orders one at a time." },
+    { status: 403 }
+  );
 }

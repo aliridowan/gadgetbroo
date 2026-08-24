@@ -4,15 +4,14 @@ import { requireAdmin } from "../../../../lib/rbac";
 import { revalidatePath } from "next/cache";
 
 import { createSiteMediaSchema } from "../../../../zodSchemas/siteMediaSchema";
+import { SiteMediaService } from "../../../../lib/services/siteMediaService";
 
 export async function GET(request: NextRequest) {
   try {
     const session = await requireAdmin();
     if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const banners = await prisma.siteMedia.findMany({
-      orderBy: { sortOrder: "asc" },
-    });
+    const banners = await SiteMediaService.getBanners();
 
     return NextResponse.json({ banners });
   } catch (error) {

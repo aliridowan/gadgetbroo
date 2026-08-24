@@ -3,6 +3,7 @@ import { createAuthMiddleware, APIError } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "@/lib/prisma";
 import { passwordSchema } from "../zodSchemas/passwordSchema";
+import { EmailService } from "@/lib/services/emailService";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -10,8 +11,21 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    // Wires POST /api/auth/request-password-reset (currently 400s with
+    // "Reset password isn't enabled" without this) to actually send mail.
+    // `url` here is already the full, correct link — better-auth builds
+    // it (token creation + expiry + the validate-then-redirect hop
+    // through GET /api/auth/reset-password/:token) before calling this;
+    // EmailService's only job is turning it into an email.
+    sendResetPassword: async ({ user, url }) => {
+      await EmailService.sendPasswordResetEmail({
+        to: user.email,
+        fullName: user.name,
+        resetUrl: url,
+      });
+    },
   },
-  
+
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -48,6 +62,7 @@ export const auth = betterAuth({
 
   trustedOrigins: [
     "http://localhost:3000",
+    "http://localhost:2323",
     "https://dev.gadgetbroo.com",
     "http://dev.gadgetbroo.com"
   ],
@@ -55,7 +70,17 @@ export const auth = betterAuth({
   // hooks er kahini hocce backend a check korar jonno mane zod schema backend a use korar jonno hooks abong safeParse use kora lage
 
   rateLimit: {
-    enabled: true,              // false by default in dev
+    // Turned off for now — the per-IP resolution this depends on
+    // (advanced.ipAddress.trustedProxies/ipAddressHeaders above) isn't
+    // configured correctly for wherever this actually deploys yet, so
+    // instead of enforcing per-IP limits it was falling back to one
+    // shared bucket for every visitor — meaning a handful of requests
+    // from anyone could lock out sign-in for everyone, the opposite of
+    // what this is supposed to protect against. Revisit once the real
+    // deployment's reverse proxy / CDN setup is known and trustedProxies
+    // is configured to match it — everything below is left as-is so
+    // turning it back on later is just this one flag.
+    enabled: false,
     window: 60,                 // seconds
     max: 100,                   // requests per window
     customRules: {

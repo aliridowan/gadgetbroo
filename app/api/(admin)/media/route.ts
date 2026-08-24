@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "../../../../lib/auth";
 import prisma from "../../../../lib/prisma";
 import { MediaService } from "@/lib/services/mediaService";
+import { MediaLibraryService } from "@/lib/services/mediaLibraryService";
 
 
 import { checkPermission } from "@/lib/rbac";
@@ -27,60 +28,15 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const search = searchParams.get("search") || "";
-    const type = searchParams.get("type"); // "image" | "video" | null
-    const page = Number(searchParams.get("page") || 1);
-    const limit = Math.min(Number(searchParams.get("limit") || 60), 100);
-    const skip = (page - 1) * limit;
 
-    const where = {
-      AND: [
-        search ? { name: { contains: search, mode: "insensitive" as const } } : {},
-        type ? { fileType: type } : {},
-      ],
-    };
+    const result = await MediaLibraryService.getMediaFiles({
+      search: searchParams.get("search") ?? undefined,
+      type: searchParams.get("type") ?? undefined, // "image" | "video" | undefined
+      page: searchParams.get("page") ? Number(searchParams.get("page")) : undefined,
+      limit: searchParams.get("limit") ? Number(searchParams.get("limit")) : undefined,
+    });
 
-    const [files, total] = await Promise.all([
-      prisma.mediaFile.findMany({
-        where,
-        take: limit,
-        skip,
-        orderBy: { createdAt: "desc" },
-        include: {
-          images: {
-            select: {
-              isPrimary: true,
-              product: { select: { id: true, name: true, slug: true } },
-            },
-          },
-        },
-      }),
-      prisma.mediaFile.count({ where }),
-    ]);
-
-    const formattedFiles = files.map((f) => ({
-      fileId: f.fileId,
-      name: f.name,
-      url: f.url,
-      filePath: f.filePath,
-      fileType: f.fileType,
-      mimeType: f.mimeType,
-      size: f.size,
-      width: f.width,
-      height: f.height,
-      hash: f.hash,
-      createdAt: f.createdAt,
-      products: f.images.map((img) => ({
-        id: img.product.id,
-        name: img.product.name,
-        slug: img.product.slug,
-        isPrimary: img.isPrimary,
-      })),
-    }));
-
-    const totalPages = Math.ceil(total / limit);
-
-    return NextResponse.json({ files: formattedFiles, total, page, limit, totalPages });
+    return NextResponse.json({ files: result.files, total: result.total, page: result.page, limit: result.limit, totalPages: result.totalPages });
   } catch (error) {
     console.error("Media GET error:", error);
     return NextResponse.json(

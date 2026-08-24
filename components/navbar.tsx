@@ -1,5 +1,6 @@
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { getServerSession } from '../helpers/get-servesession';
 import prisma from '../lib/prisma';
 import CartIcon from './storefront/CartIcon';
@@ -84,10 +85,21 @@ export default async function Navbar() {
           ) : (
             <div className="ml-2">
               <DropdownMenu>
-                <DropdownMenuTrigger className="flex items-center justify-center w-8 h-8 rounded-full bg-muted border border-border hover:ring-2 hover:ring-primary/50 outline-none transition-all">
+                <DropdownMenuTrigger className="relative flex items-center justify-center w-8 h-8 rounded-full bg-muted border border-border hover:ring-2 hover:ring-primary/50 outline-none transition-all">
                   {user.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={user.image} alt={user.name || "User"} className="w-full h-full rounded-full object-cover" />
+                    // next/image — user.image is only ever set by better-auth
+                    // from Google OAuth (see next.config.ts's googleusercontent.com
+                    // remotePattern), never user- or admin-editable directly.
+                    // object-cover here is deliberate, unlike product photos: a
+                    // profile picture cropped to fill a circle is the expected,
+                    // standard avatar treatment, not a "hidden content" bug.
+                    <Image
+                      src={user.image}
+                      alt={user.name || "User"}
+                      fill
+                      sizes="32px"
+                      className="rounded-full object-cover"
+                    />
                   ) : (
                     <UserIcon size={16} className="text-muted-foreground" />
                   )}

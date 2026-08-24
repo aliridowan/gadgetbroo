@@ -175,8 +175,8 @@ export function DeleteRoleButton({ role, onSuccess }: DeleteRoleProps) {
   const [open, setOpen] = useState(false);
 
   const handleDelete = async () => {
-    if (role.users.length > 0) {
-      toast.error(`Cannot delete — ${role.users.length} user(s) are assigned to this role`);
+    if (role._count.users > 0) {
+      toast.error(`Cannot delete — ${role._count.users} user(s) are assigned to this role`);
       setOpen(false);
       return;
     }
@@ -216,19 +216,19 @@ export function DeleteRoleButton({ role, onSuccess }: DeleteRoleProps) {
           <AlertDialogTitle>Delete &quot;{role.name}&quot;?</AlertDialogTitle>
           <AlertDialogDescription>
             This will permanently delete the role and all its permissions.
-            {role.users.length > 0 && (
+            {role._count.users > 0 && (
               <span className="block mt-2 text-destructive font-medium">
-                ⚠ {role.users.length} user(s) are assigned to this role. Reassign them before deleting.
+                ⚠ {role._count.users} user(s) are assigned to this role. Reassign them before deleting.
               </span>
             )}
-            {role.users.length === 0 && " This action cannot be undone."}
+            {role._count.users === 0 && " This action cannot be undone."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
-            disabled={loading || role.users.length > 0}
+            disabled={loading || role._count.users > 0}
             className="bg-red-600 hover:bg-red-700 text-foreground"
           >
             {loading ? (

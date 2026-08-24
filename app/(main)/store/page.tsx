@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import prisma from "@/lib/prisma";
 import { ArrowRight, Search, SlidersHorizontal, Tag } from "lucide-react";
 import StoreSearch from "@/components/storefront/StoreSearch";
@@ -7,8 +8,11 @@ import StoreSidebarClient from "@/components/storefront/StoreSidebarClient";
 import RecentProductsSlider from "@/components/storefront/RecentProductsSlider";
 import URLPagination from "@/components/URLPagination";
 
-export const revalidate = 3600;
-
+// No revalidate export here — this page reads searchParams below, which
+// forces dynamic rendering regardless of any revalidate value, so a
+// time-based ISR export would never actually apply. Revisit with Cache
+// Components ("use cache" + cacheTag/updateTag) once there's real
+// traffic to justify it, not before.
 export default async function StorePage(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
@@ -125,11 +129,19 @@ export default async function StorePage(props: {
       >
         <div className="aspect-square w-full rounded-xl bg-muted/30 flex items-center justify-center mb-4 sm:mb-6 overflow-hidden relative">
           {primaryImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={`${primaryImage}${primaryImage.includes("?") ? "&" : "?"}tr=w-400`}
+            // next/image instead of a raw <img> — real remotePatterns are
+            // already configured for every host these come from. Also
+            // drops the old `?tr=w-400` ImageKit transform param: storage
+            // migrated to Garage, which doesn't understand that query
+            // param and was silently serving the full-resolution original
+            // into this thumbnail slot. next/image resizes server-side
+            // itself regardless of what the origin supports.
+            <Image
+              src={primaryImage}
               alt={product.name}
-              className="w-full h-full object-contain p-2 sm:p-4 group-hover:scale-110 transition-transform duration-500"
+              fill
+              sizes="(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, 50vw"
+              className="object-contain p-2 sm:p-4 group-hover:scale-110 transition-transform duration-500"
             />
           ) : (
             <div className="text-muted-foreground">No Image</div>

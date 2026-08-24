@@ -5,7 +5,7 @@ import { useCart } from "@/store/useCart";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, Truck, ShieldCheck, CreditCard, Banknote } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Truck, ShieldCheck, CreditCard, Banknote, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 
 interface ZoneInfo {
@@ -52,7 +52,7 @@ export default function CheckoutClient({ groupedZones, user, savedAddresses }: C
   const [selectedCity, setSelectedCity] = useState<string>("");
   
   // Payment
-  const [paymentMethod, setPaymentMethod] = useState<"CASH_ON_DELIVERY" | "STRIPE">("CASH_ON_DELIVERY");
+  const [paymentMethod, setPaymentMethod] = useState<"CASH_ON_DELIVERY" | "BKASH" | "CARD">("CASH_ON_DELIVERY");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -81,6 +81,17 @@ export default function CheckoutClient({ groupedZones, user, savedAddresses }: C
   }, [selectedAddressId, selectedState, selectedCity, groupedZones, savedAddresses]);
 
   const grandTotal = subtotal + deliveryFee;
+
+  // Whether the "Confirm Order" button should be enabled — has to account
+  // for BOTH address paths: a saved address just needs to actually be
+  // selected, the new-address form needs its required fields filled.
+  // (Previously this only checked `selectedCity`, which is exclusively the
+  // new-address form's own state and never gets set when a saved address
+  // is picked instead — that's what kept the button permanently disabled
+  // for the saved-address path.)
+  const hasValidAddress = selectedAddressId === "new"
+    ? Boolean(fullName && phone && street && selectedState && selectedCity)
+    : savedAddresses.some(a => a.id === selectedAddressId);
 
   // Handle cascading dropdown reset
   const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -121,7 +132,9 @@ export default function CheckoutClient({ groupedZones, user, savedAddresses }: C
           paymentMethod,
           items: items.map(i => ({
             variantId: i.variantId,
+            productId: i.productId,
             quantity: i.quantity,
+            price: i.price,
           })),
         }),
       });
@@ -176,41 +189,43 @@ export default function CheckoutClient({ groupedZones, user, savedAddresses }: C
           
           <div className="p-6 sm:p-8 space-y-6">
             
-            {/* Address Selection Grid */}
+            {/* Address Selection — dropdown, defaults to the saved address
+                the server already sorted first (isDefault, then most
+                recently created) */}
             {savedAddresses.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                {savedAddresses.map(addr => (
-                  <div 
-                    key={addr.id}
-                    onClick={() => setSelectedAddressId(addr.id)}
-                    className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedAddressId === addr.id ? 'border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-[#0a0a0a] hover:border-slate-700'}`}
+              <div className="space-y-3 mb-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Deliver to</label>
+                  <select
+                    value={selectedAddressId}
+                    onChange={(e) => setSelectedAddressId(e.target.value)}
+                    className="w-full bg-[#0a0a0a] border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all appearance-none"
                   >
-                    <div className="font-semibold text-white mb-1 flex items-center gap-2">
-                      {addr.fullName}
-                      {addr.isDefault && <span className="bg-slate-800 text-slate-300 text-[10px] uppercase px-2 py-0.5 rounded-full">Default</span>}
-                    </div>
-                    <div className="text-sm text-slate-400 line-clamp-1">{addr.line1}</div>
-                    <div className="text-sm text-slate-400">{addr.city}, {addr.state}</div>
-                    <div className="text-sm text-slate-400 mt-2">{addr.phone}</div>
-                    
-                    {selectedAddressId === addr.id && (
-                      <div className="absolute top-4 right-4 text-blue-500">
-                        <CheckCircle2 className="w-5 h-5" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {/* Add New Address Card */}
-                <div 
-                  onClick={() => setSelectedAddressId("new")}
-                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition-all ${selectedAddressId === "new" ? 'border-blue-500 bg-blue-500/10 text-blue-400' : 'border-slate-800 bg-[#0a0a0a] text-slate-400 hover:border-slate-700 hover:text-white'}`}
-                >
-                  <div className="w-10 h-10 rounded-full border-2 border-dashed border-current flex items-center justify-center mb-2">
-                    <span className="text-xl">+</span>
-                  </div>
-                  <span className="font-medium">Add New Address</span>
+                    {savedAddresses.map(addr => (
+                      <option key={addr.id} value={addr.id}>
+                        {addr.fullName} — {addr.line1}, {addr.city}{addr.isDefault ? " (Default)" : ""}
+                      </option>
+                    ))}
+                    <option value="new">+ Add a new address</option>
+                  </select>
                 </div>
+
+                {/* Read-only summary of whichever saved address is picked */}
+                {selectedAddressId !== "new" && (() => {
+                  const addr = savedAddresses.find(a => a.id === selectedAddressId);
+                  if (!addr) return null;
+                  return (
+                    <div className="p-4 rounded-xl border border-slate-800 bg-[#0a0a0a] text-sm text-slate-400 space-y-1">
+                      <div className="font-medium text-white flex items-center gap-2">
+                        {addr.fullName}
+                        {addr.isDefault && <span className="bg-slate-800 text-slate-300 text-[10px] uppercase px-2 py-0.5 rounded-full">Default</span>}
+                      </div>
+                      <div>{addr.line1}{addr.line2 ? `, ${addr.line2}` : ""}</div>
+                      <div>{addr.city}, {addr.state} {addr.postalCode}</div>
+                      <div>{addr.phone}</div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
@@ -342,20 +357,36 @@ export default function CheckoutClient({ groupedZones, user, savedAddresses }: C
               </div>
             </label>
 
-            <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === 'STRIPE' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-[#0a0a0a] hover:border-slate-700 opacity-50'}`}>
-              <input 
-                type="radio" 
+            <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === 'BKASH' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-[#0a0a0a] hover:border-slate-700'}`}>
+              <input
+                type="radio"
                 name="payment"
-                disabled // Disabled for now until Stripe is implemented
-                className="w-4 h-4 text-blue-600 focus:ring-blue-500 bg-slate-800 border-slate-700" 
-                checked={paymentMethod === 'STRIPE'}
-                onChange={() => setPaymentMethod("STRIPE")}
+                className="w-4 h-4 text-blue-600 focus:ring-blue-500 bg-slate-800 border-slate-700"
+                checked={paymentMethod === 'BKASH'}
+                onChange={() => setPaymentMethod("BKASH")}
+              />
+              <div className="flex items-center gap-3">
+                <Smartphone className="w-6 h-6 text-pink-400" />
+                <div>
+                  <div className="font-semibold text-white">bKash</div>
+                  <div className="text-sm text-slate-400">We'll contact you with payment details after you place the order.</div>
+                </div>
+              </div>
+            </label>
+
+            <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === 'CARD' ? 'border-blue-500 bg-blue-500/10' : 'border-slate-800 bg-[#0a0a0a] hover:border-slate-700'}`}>
+              <input
+                type="radio"
+                name="payment"
+                className="w-4 h-4 text-blue-600 focus:ring-blue-500 bg-slate-800 border-slate-700"
+                checked={paymentMethod === 'CARD'}
+                onChange={() => setPaymentMethod("CARD")}
               />
               <div className="flex items-center gap-3">
                 <CreditCard className="w-6 h-6 text-indigo-400" />
                 <div>
-                  <div className="font-semibold text-white">Credit Card (Stripe)</div>
-                  <div className="text-sm text-slate-400">Temporarily disabled while we set up the gateway.</div>
+                  <div className="font-semibold text-white">Card</div>
+                  <div className="text-sm text-slate-400">We'll contact you with payment details after you place the order.</div>
                 </div>
               </div>
             </label>
@@ -429,7 +460,7 @@ export default function CheckoutClient({ groupedZones, user, savedAddresses }: C
 
             <button
               type="submit"
-              disabled={isSubmitting || !selectedCity}
+              disabled={isSubmitting || !hasValidAddress}
               className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-slate-800 disabled:text-slate-500 text-white text-lg font-semibold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(37,99,235,0.15)] mt-6 disabled:shadow-none"
             >
               {isSubmitting ? (

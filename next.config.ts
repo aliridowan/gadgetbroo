@@ -24,6 +24,13 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "gadgetbroo.cdn.octetit.com" },
       { protocol: "https", hostname: "octetit-uploads.cdn.octetit.com" }, // matches GARAGE_PUBLIC_URL
       { protocol: "https", hostname: "s3api.octetit.com" }, // matches GARAGE_ENDPOINT (fallback if GARAGE_PUBLIC_URL is unset)
+      // Google OAuth profile photos (session.user.image, shown in the navbar
+      // avatar) — better-auth's socialProviders.google is enabled, and this
+      // field is never user- or admin-editable through any form in this app,
+      // so Google's own CDN is the only source it can ever contain. Wildcard
+      // subdomain since Google serves these from lh1-lh6.googleusercontent.com
+      // depending on account/region, not a single fixed host.
+      { protocol: "https", hostname: "*.googleusercontent.com" },
     ],
   },
 };

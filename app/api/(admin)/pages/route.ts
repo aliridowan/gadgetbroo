@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
 import { checkPermission } from "@/lib/rbac";
+import { PageContentService } from "@/lib/services/pageContentService";
 
 // GET a page content for the admin
 export async function GET(request: NextRequest) {
@@ -16,14 +16,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Slug is required" }, { status: 400 });
     }
 
-    const page = await prisma.page.findUnique({
-      where: {
-        slug_language: {
-          slug,
-          language,
-        },
-      },
-    });
+    const page = await PageContentService.getPage(slug, language);
 
     return NextResponse.json({ page });
   } catch (error) {
@@ -45,22 +38,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    const page = await prisma.page.upsert({
-      where: {
-        slug_language: {
-          slug,
-          language,
-        },
-      },
-      update: {
-        content,
-      },
-      create: {
-        slug,
-        language,
-        content,
-      },
-    });
+    const page = await PageContentService.savePage(slug, language, content);
 
     return NextResponse.json({ success: true, page });
   } catch (error) {

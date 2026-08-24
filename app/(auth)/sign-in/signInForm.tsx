@@ -75,6 +75,12 @@ export function SignInForm() {
     }
     toast.success("User logged in successfully")
     router.push('/')
+    // Navbar (app/(main)/layout.tsx) is a Server Component that reads the
+    // session itself — a plain client-side router.push() can land on a
+    // cached (pre-login) render of that shared layout. refresh() forces
+    // Next.js to re-fetch it with the now-set session cookie, same pattern
+    // logoutUser.tsx already uses.
+    router.refresh()
   }
 
   async function handleSocialSignIn(provider: "google" | "github") {
