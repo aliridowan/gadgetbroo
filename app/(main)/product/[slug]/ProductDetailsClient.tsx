@@ -498,7 +498,7 @@ export default function ProductDetailsClient({
           <div className="flex flex-col sm:flex-row items-center justify-between mb-8 gap-4">
             <h2 className="text-2xl font-bold text-foreground tracking-tight">You Might Also Like</h2>
             <Link
-              href={`/store?category=${product.category.slug}`}
+              href={`/store/category/${product.category.slug}`}
               className="text-sm text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
             >
               View more from {product.category.name} <ArrowRight size={14} />

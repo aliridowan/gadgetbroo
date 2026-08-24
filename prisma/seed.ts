@@ -1,3 +1,4 @@
+import "dotenv/config";
 // prisma/seed.ts
 import { hashPassword } from "better-auth/crypto";
 import prisma from "../lib/prisma";

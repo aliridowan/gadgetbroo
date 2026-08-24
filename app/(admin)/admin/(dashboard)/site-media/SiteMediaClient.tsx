@@ -190,7 +190,7 @@ export default function SiteMediaClient({
                     value={newLinkUrl}
                     onChange={(e) => setNewLinkUrl(e.target.value)}
                     className="bg-background border-border mt-1 text-foreground"
-                    placeholder="/store?category=laptops"
+                    placeholder="/store/category/laptops"
                   />
                 </div>
               </div>
