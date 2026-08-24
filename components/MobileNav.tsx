@@ -126,7 +126,7 @@ export default function MobileNav({ bannerUrl, faviconUrl }: MobileNavProps) {
                   All Store
                 </Link>
                 <Link 
-                  href="/store?category=chargers-and-adapters" 
+                  href="/store/category/chargers-and-adapters"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-3 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
                 >
@@ -134,7 +134,7 @@ export default function MobileNav({ bannerUrl, faviconUrl }: MobileNavProps) {
                   Chargers & Adapters
                 </Link>
                 <Link 
-                  href="/store?category=mobile-cooler" 
+                  href="/store/category/mobile-cooler"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-3 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
                 >
@@ -142,7 +142,7 @@ export default function MobileNav({ bannerUrl, faviconUrl }: MobileNavProps) {
                   Mobile Coolers
                 </Link>
                 <Link 
-                  href="/store?category=smart-watch" 
+                  href="/store/category/smart-watch"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-3 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
                 >
@@ -150,7 +150,7 @@ export default function MobileNav({ bannerUrl, faviconUrl }: MobileNavProps) {
                   Smart Watches
                 </Link>
                 <Link 
-                  href="/store?category=sounds-audio" 
+                  href="/store/category/sounds-audio"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-3 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
                 >
@@ -158,7 +158,7 @@ export default function MobileNav({ bannerUrl, faviconUrl }: MobileNavProps) {
                   Sounds & Audio
                 </Link>
                 <Link 
-                  href="/store?category=power-bank" 
+                  href="/store/category/power-bank"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-3 px-3 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
                 >

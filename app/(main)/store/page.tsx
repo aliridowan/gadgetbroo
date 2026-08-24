@@ -17,7 +17,8 @@ export default async function StorePage(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const searchParams = await props.searchParams;
-  const categoryParam = searchParams.category as string | undefined;
+  // Category filtering now lives on its own route — /store/category/[slug] —
+  // not a ?category= param here. This page only branches on `search`.
   const searchQuery = searchParams.search as string | undefined;
 
   // Fetch all active categories for the sidebar

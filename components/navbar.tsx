@@ -52,10 +52,10 @@ export default async function Navbar() {
           {/* Desktop Links */}
           <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-foreground/80">
             <Link href="/store" className="hover:text-foreground transition-colors">Store</Link>
-            <Link href="/store?category=mobile-cooler" className="hover:text-foreground transition-colors">Mobile Coolers</Link>
-            <Link href="/store?category=chargers-and-adapters" className="hover:text-foreground transition-colors">Chargers & Adapters</Link>
-            <Link href="/store?category=smart-watch" className="hover:text-foreground transition-colors">Smart Watches</Link>
-            <Link href="/store?category=sounds-audio" className="hover:text-foreground transition-colors">Sounds & Audio</Link>
+            <Link href="/store/category/mobile-cooler" className="hover:text-foreground transition-colors">Mobile Coolers</Link>
+            <Link href="/store/category/chargers-and-adapters" className="hover:text-foreground transition-colors">Chargers & Adapters</Link>
+            <Link href="/store/category/smart-watch" className="hover:text-foreground transition-colors">Smart Watches</Link>
+            <Link href="/store/category/sounds-audio" className="hover:text-foreground transition-colors">Sounds & Audio</Link>
           </nav>
         </div>
 
