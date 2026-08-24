@@ -7,8 +7,11 @@ import StoreSidebarClient from "@/components/storefront/StoreSidebarClient";
 import URLPagination from "@/components/URLPagination";
 import { notFound } from "next/navigation";
 
-export const revalidate = 3600;
-
+// No revalidate export here — this page reads searchParams below, which
+// forces dynamic rendering regardless of any revalidate value, so a
+// time-based ISR export would never actually apply. Revisit with Cache
+// Components ("use cache" + cacheTag/updateTag) once there's real
+// traffic to justify it, not before.
 export default async function CategoryPage(props: {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;

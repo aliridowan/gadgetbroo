@@ -3,6 +3,7 @@ import prisma from "../../../../lib/prisma";
 import { auth, User } from "../../../../lib/auth";
 import { CreateUserSchema } from "../../../../zodSchemas/createUserSchema";
 import { requireAdmin } from "../../../../lib/rbac";
+import { UserService } from "../../../../lib/services/userService";
 
 export async function GET(request: NextRequest) {
 
@@ -11,21 +12,13 @@ export async function GET(request: NextRequest) {
     if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const skip = (page - 1) * limit;
 
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        include: { role: true },
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      prisma.user.count()
-    ]);
+    const result = await UserService.getUsers({
+      page: searchParams.get("page") ? parseInt(searchParams.get("page")!) : undefined,
+      limit: searchParams.get("limit") ? parseInt(searchParams.get("limit")!) : undefined,
+    });
 
-    return NextResponse.json({ users, total, page, totalPages: Math.ceil(total / limit) });
+    return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json({ error: "Couldn't fetch data" }, { status: 500 })
   }

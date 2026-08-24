@@ -149,6 +149,22 @@ enum PaymentMethod {
   CASH_ON_DELIVERY
   CASH
   MANUAL_BKASH
+  // Online-checkout methods — both are manual/unverified until an admin
+  // confirms payment and updates paymentStatus by hand (same as
+  // CASH_ON_DELIVERY today), since no live gateway is integrated for
+  // either. Kept distinct from POS's own CASH/MANUAL_BKASH values —
+  // those are staff-collected in person and marked PAID immediately;
+  // these are customer-initiated online and start UNPAID.
+  BKASH
+  CARD
+  // POS's in-person card option — was wrongly reusing STRIPE (an
+  // unimplemented gateway that also isn't PAID/UNPAID-derived the way
+  // this needs to be). Distinct from CARD above for the same reason
+  // MANUAL_BKASH is distinct from BKASH: staff-witnessed and collected
+  // on the spot via a physical terminal, so it's marked PAID immediately
+  // like CASH/MANUAL_BKASH — not the online "wait for admin to confirm"
+  // case CARD is.
+  MANUAL_CARD
 }
 
 model Category {

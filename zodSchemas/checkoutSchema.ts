@@ -17,5 +17,12 @@ export const checkoutSchema = z.object({
   state: z.string().optional(),
   postalCode: z.string().optional(),
   country: z.string().default("Bangladesh"),
-  paymentMethod: z.string(),
+  // Restricted to the three methods actually offered at checkout — was a
+  // bare z.string() before, which let a direct API call submit any value
+  // (including "STRIPE", a gateway that was never implemented) and still
+  // create a real, stock-decremented order. bKash and Card aren't live
+  // gateways either — both are manual/unverified like COD, confirmed and
+  // marked PAID by an admin after the fact — but at least now only the
+  // three methods the storefront actually supports can be submitted.
+  paymentMethod: z.enum(["CASH_ON_DELIVERY", "BKASH", "CARD"]),
 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
 import { checkPermission } from "@/lib/rbac";
+import { ReviewService } from "@/lib/services/reviewService";
 
 import { updateReviewVisibilitySchema } from "@/zodSchemas/reviewSchema";
 
@@ -22,10 +22,7 @@ export async function PATCH(
 
     const { isVisible } = parsed.data;
 
-    const review = await prisma.review.update({
-      where: { id },
-      data: { isVisible },
-    });
+    const review = await ReviewService.updateVisibility(id, isVisible);
 
     return NextResponse.json({ review });
   } catch (error) {
@@ -44,9 +41,7 @@ export async function DELETE(
 
     const { id } = await params;
 
-    await prisma.review.delete({
-      where: { id },
-    });
+    await ReviewService.deleteReview(id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

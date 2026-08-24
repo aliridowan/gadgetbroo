@@ -9,6 +9,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import ProductCommentsClient from "@/components/storefront/ProductCommentsClient";
 import { FaYoutube } from "react-icons/fa";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 
 function getYouTubeEmbedUrl(url: string) {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -279,7 +280,7 @@ export default function ProductDetailsClient({
                       alt={`Thumbnail ${idx}`}
                       fill
                       sizes="80px"
-                      className="object-cover"
+                      className="object-contain"
                     />
                   )}
                 </button>
@@ -346,7 +347,7 @@ export default function ProductDetailsClient({
                   alt={product.name}
                   fill
                   sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover transition-transform duration-100 ease-out"
+                  className="object-contain transition-transform duration-100 ease-out"
                   style={{
                     transform: zoomed ? "scale(2.2)" : "scale(1)",
                     transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
@@ -485,7 +486,7 @@ export default function ProductDetailsClient({
             <h3 className="text-xl font-bold text-foreground">Product Description</h3>
             <div
               className="prose dark:prose-invert  max-w-none prose-p:leading-relaxed prose-p:text-muted-foreground"
-              dangerouslySetInnerHTML={{ __html: product.description }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.description) }}
             />
           </div>
         </div>

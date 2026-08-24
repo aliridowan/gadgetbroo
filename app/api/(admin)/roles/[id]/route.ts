@@ -40,13 +40,17 @@ export async function PATCH(
     }
   }
 
+  // _count instead of the full users array — same fix as GET /api/roles;
+  // the client never actually reads this response's `role` field anyway
+  // (it calls a separate fetchRoles() after a successful PATCH), but no
+  // reason to over-fetch full user rows just to discard them.
   const updated = await prisma.role.update({
     where: { id },
     data: {
       name: name.trim(),
       description: description ?? role.description,
     },
-    include: { permissions: true, users: true },
+    include: { permissions: true, _count: { select: { users: true } } },
   });
 
   return NextResponse.json({ role: updated });

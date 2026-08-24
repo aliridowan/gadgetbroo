@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "@/helpers/get-servesession";
 import { checkPermission } from "@/lib/rbac";
 import { createReviewSchema } from "@/zodSchemas/reviewSchema";
+import { ReviewService } from "@/lib/services/reviewService";
 
 export async function POST(request: NextRequest) {
   try {
@@ -84,34 +85,10 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
-    const skip = (page - 1) * limit;
 
-    const where = {
-      ...(search && {
-        OR: [
-          { title: { contains: search, mode: "insensitive" as const } },
-          { body: { contains: search, mode: "insensitive" as const } },
-          { user: { name: { contains: search, mode: "insensitive" as const } } },
-          { product: { name: { contains: search, mode: "insensitive" as const } } },
-        ],
-      }),
-    };
+    const result = await ReviewService.getReviews({ search, page, limit });
 
-    const [reviews, total] = await Promise.all([
-      prisma.review.findMany({
-        where,
-        include: {
-          user: { select: { name: true, email: true } },
-          product: { select: { name: true, slug: true } },
-        },
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      prisma.review.count({ where }),
-    ]);
-
-    return NextResponse.json({ reviews, total, page, totalPages: Math.ceil(total / limit) });
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Reviews GET error:", error);
     return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });

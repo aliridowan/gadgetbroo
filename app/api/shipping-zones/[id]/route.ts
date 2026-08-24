@@ -1,20 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { checkPermission } from "@/lib/rbac";
+import { ShippingZoneService } from "@/lib/services/shippingZoneService";
 
 export async function PUT(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
+    const session = await checkPermission("Shipping", "canUpdate");
+    if (!session) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+
     const params = await props.params;
     const body = await req.json();
     const { stateName, cityName, deliveryFee, isActive } = body;
 
-    const updatedZone = await prisma.shippingZone.update({
-      where: { id: params.id },
-      data: {
-        ...(stateName && { stateName }),
-        ...(cityName && { cityName }),
-        ...(deliveryFee !== undefined && { deliveryFee: parseFloat(deliveryFee) }),
-        ...(isActive !== undefined && { isActive })
-      }
+    const updatedZone = await ShippingZoneService.updateZone(params.id, {
+      stateName,
+      cityName,
+      deliveryFee: deliveryFee !== undefined ? parseFloat(deliveryFee) : undefined,
+      isActive,
     });
 
     return NextResponse.json({ success: true, data: updatedZone });
@@ -29,10 +30,11 @@ export async function PUT(req: NextRequest, props: { params: Promise<{ id: strin
 
 export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
+    const session = await checkPermission("Shipping", "canDelete");
+    if (!session) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+
     const params = await props.params;
-    await prisma.shippingZone.delete({
-      where: { id: params.id }
-    });
+    await ShippingZoneService.deleteZone(params.id);
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

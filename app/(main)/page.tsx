@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import prisma from "@/lib/prisma";
 import { ArrowRight, Search } from "lucide-react";
 import HeroSlider from "@/components/storefront/HeroSlider";
@@ -6,9 +7,11 @@ import { safeQuery } from "@/lib/safe-query";
 import CategorySlider from "@/components/storefront/CategorySlider";
 import URLPagination from "@/components/URLPagination";
 
-// Force dynamic if needed, or rely on ISR/revalidation
-export const revalidate = 3600; // revalidate every hour
-
+// No revalidate export here — this page reads searchParams below, which
+// forces dynamic rendering regardless of any revalidate value, so a
+// time-based ISR export would never actually apply. See the products/
+// store audit discussion: revisit with Cache Components ("use cache" +
+// cacheTag/updateTag) once there's real traffic to justify it, not before.
 export default async function Home(props: { searchParams?: Promise<{ page?: string }> }) {
   const searchParams = props.searchParams ? await props.searchParams : {};
   const page = searchParams.page ? parseInt(searchParams.page) : 1;
@@ -128,11 +131,21 @@ export default async function Home(props: { searchParams?: Promise<{ page?: stri
               >
                 <div className="aspect-square w-full rounded-xl bg-muted/30 flex items-center justify-center mb-4 sm:mb-6 overflow-hidden relative">
                   {primaryImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={`${primaryImage}${primaryImage.includes("?") ? "&" : "?"}tr=w-400`}
+                    // next/image instead of a raw <img> — real remotePatterns
+                    // are already configured for every host these come from.
+                    // Also drops the old `?tr=w-400` ImageKit transform param:
+                    // the storage backend migrated to Garage a while back,
+                    // which doesn't understand that query param at all, so it
+                    // was silently ignored and the full-resolution original
+                    // was being served into this thumbnail slot regardless.
+                    // next/image resizes server-side itself, so this is a
+                    // strict improvement either way.
+                    <Image
+                      src={primaryImage}
                       alt={product.name}
-                      className="w-full h-full object-contain p-2 sm:p-4 group-hover:scale-110 transition-transform duration-500"
+                      fill
+                      sizes="(min-width: 1024px) 25vw, 50vw"
+                      className="object-contain p-2 sm:p-4 group-hover:scale-110 transition-transform duration-500"
                     />
                   ) : (
                     <div className="text-muted-foreground">No Image</div>

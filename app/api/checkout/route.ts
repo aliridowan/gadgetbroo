@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { headers } from "next/headers";
+import { OrderService } from "@/lib/services/orderService";
 
 import { checkoutSchema } from "@/zodSchemas/checkoutSchema";
 
@@ -38,60 +39,11 @@ export async function POST(req: Request) {
 
     // Wrap everything in a Prisma transaction for hard-allocation (No Overselling)
     const order = await prisma.$transaction(async (tx) => {
-      let subtotalCents = 0;
-      const orderItemsData = [];
-
-      // 1. Verify stock and lock inventory for each item
-      for (const item of items) {
-        // Fetch current variant and product info
-        const variant = await tx.productVariant.findUnique({
-          where: { id: item.variantId },
-          include: {
-            product: {
-              include: {
-                images: {
-                  where: { isPrimary: true },
-                  include: { mediaFile: true },
-                  take: 1
-                }
-              }
-            }
-          }
-        });
-
-        if (!variant || variant.isDeleted || !variant.isActive || !variant.product.isActive) {
-          throw new Error(`Product variant ${item.variantId} is no longer available.`);
-        }
-
-        if (variant.stock < item.quantity) {
-          throw new Error(
-            `Out of stock: ${variant.product.name}. Only ${variant.stock} left in stock, but you requested ${item.quantity}.`
-          );
-        }
-
-        // Deduct stock
-        await tx.productVariant.update({
-          where: { id: variant.id },
-          data: { stock: variant.stock - item.quantity },
-        });
-
-        // Calculate subtotal securely using integer math (cents/poisha) to avoid JS floating-point precision loss
-        const priceCents = Math.round(Number(variant.price) * 100);
-        subtotalCents += priceCents * item.quantity;
-
-        // Take Snapshot of the item
-        const primaryImage = variant.product.images[0]?.mediaFile.url || null;
-
-        orderItemsData.push({
-          variantId: variant.id,
-          quantity: item.quantity,
-          priceAtOrder: priceCents / 100,
-          productName: variant.product.name,
-          variantName: variant.name !== "Default" ? variant.name : "Standard Edition",
-          skuAtOrder: variant.sku,
-          imageSnapshot: primaryImage,
-        });
-      }
+      // 1. Verify stock and atomically lock inventory for each item — shared
+      // with /api/pos, see OrderService.reserveStockAndBuildItems for why
+      // this has to be an atomic guarded decrement, not a separate
+      // check-then-write.
+      const { orderItemsData, subtotalCents } = await OrderService.reserveStockAndBuildItems(tx, items);
 
       // 2. Resolve the final Address and Shipping Zone
       let finalAddressId = "";
@@ -160,13 +112,21 @@ export async function POST(req: Request) {
       const total = totalCents / 100;
 
       // 3. Create the Final Order
+      // paymentMethod is already validated against the exact three values
+      // the storefront offers (checkoutSchema.paymentMethod), so this can
+      // pass straight through instead of collapsing anything unrecognized
+      // into CASH_ON_DELIVERY — that used to be how a client-side-only
+      // "STRIPE" submission still ended up recorded (misleadingly) as COD.
+      // All three start UNPAID/PENDING the same way COD always has —
+      // bKash and Card aren't live gateways, an admin confirms payment
+      // and updates paymentStatus by hand from the order detail page.
       const newOrder = await tx.order.create({
         data: {
           userId,
           addressId: finalAddressId,
           subtotal,
           total, // Subtotal + Delivery Fee (discount is 0 by default)
-          paymentMethod: paymentMethod === "STRIPE" ? "STRIPE" : "CASH_ON_DELIVERY",
+          paymentMethod,
           status: "PENDING",
           paymentStatus: "UNPAID",
           items: {

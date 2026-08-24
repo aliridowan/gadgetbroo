@@ -1,0 +1,12 @@
+npm notice run gadgetbroo@0.1.0 dev
+npm notice run next dev
+▲ Next.js 16.2.10 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.192.200.13:3000
+- Environments: .env
+✓ Ready in 391ms
+- Experiments (use with caution):
+  ✓ authInterrupts
+
+2026-08-19T20:07:09.573Z WARN [Better Auth]: Social provider google is missing clientId or clientSecret
+ GET /sign-in 200 in 4.1s (next.js: 2.7s, application-code: 1367ms)

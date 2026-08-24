@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Menu, X, Search, Store, Smartphone, Watch, Headphones, Zap, Battery, Home } from "lucide-react";
 import StoreSearch from "./storefront/StoreSearch";
@@ -44,8 +45,21 @@ export default function MobileNav({ bannerUrl, faviconUrl }: MobileNavProps) {
         {/* Logo Link (Desktop & Mobile) */}
         <Link href="/" className="flex items-center gap-2">
           {bannerUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={bannerUrl} alt="GadgetBroo" className="h-6 sm:h-7 w-auto object-contain dark:brightness-110" />
+            // next/image needs both dimensions fixed for fill — bannerUrl is
+            // an arbitrary admin-uploaded image (no known aspect ratio), so
+            // this bounds it to roughly the old h-6/h-7 w-auto footprint and
+            // lets object-contain preserve the real aspect ratio inside that
+            // box (letterboxed, not stretched or cropped) instead of guessing
+            // a wrong width/height pair the browser would then distort to.
+            <div className="relative h-6 sm:h-7 w-[120px] sm:w-[140px]">
+              <Image
+                src={bannerUrl}
+                alt="GadgetBroo"
+                fill
+                sizes="140px"
+                className="object-contain object-left dark:brightness-110"
+              />
+            </div>
           ) : (
             <h1 className="text-lg sm:text-xl font-bold tracking-wider text-foreground">
               G<span className="hidden sm:inline">ADGET</span>
@@ -68,8 +82,11 @@ export default function MobileNav({ bannerUrl, faviconUrl }: MobileNavProps) {
           <div className="relative w-4/5 max-w-sm bg-background border-r border-border shadow-2xl h-full flex flex-col animate-in slide-in-from-left duration-300">
             <div className="flex items-center justify-between p-5 border-b border-border">
               {faviconUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={faviconUrl} alt="GB" className="h-8 w-auto object-contain" />
+                // Same reasoning as the banner logo above — bounded box,
+                // object-contain preserves the real aspect ratio.
+                <div className="relative h-8 w-8">
+                  <Image src={faviconUrl} alt="GB" fill sizes="32px" className="object-contain" />
+                </div>
               ) : (
                 <h2 className="text-lg font-bold text-foreground tracking-wider">
                   G<span className="text-blue-500">B</span>

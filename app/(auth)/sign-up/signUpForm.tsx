@@ -68,6 +68,11 @@ export function SignUpForm() {
     } else {
       toast.success("Account Creaated Successfully")
       router.push('/')
+      // Same reasoning as signInForm.tsx — Navbar is a Server Component
+      // that reads the session itself; refresh() forces it to re-fetch
+      // with the now-set session cookie instead of a possibly-cached
+      // pre-signup render.
+      router.refresh()
     }
   }
 

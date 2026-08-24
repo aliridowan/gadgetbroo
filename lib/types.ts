@@ -24,5 +24,9 @@ export interface RoleData {
   createdAt: string;
   updatedAt: string;
   permissions: Permission[];
-  users: FullUser[]
+  // A count, not the full rows — every consumer only ever needed
+  // `.users.length`, so fetching every user row per role was pure waste.
+  // Matches the `_count.users` shape DELETE /api/roles/[id] already used
+  // for its own (still separate, still authoritative) server-side check.
+  _count: { users: number };
 }

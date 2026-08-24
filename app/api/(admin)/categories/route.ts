@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "../../../../lib/prisma";
 import { checkPermission } from "../../../../lib/rbac";
 import { createCategorySchema } from "../../../../zodSchemas/categorySchema";
+import { CategoryService } from "../../../../lib/services/categoryService";
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,19 +15,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
-    const skip = (page - 1) * limit;
 
-    const [categories, total] = await Promise.all([
-      prisma.category.findMany({
-        include: { _count: { select: { products: true } } },
-        orderBy: { createdAt: "asc" },
-        skip,
-        take: limit,
-      }),
-      prisma.category.count()
-    ]);
+    const result = await CategoryService.getCategories({ page, limit });
 
-    return NextResponse.json({ categories, total, page, totalPages: Math.ceil(total / limit) });
+    return NextResponse.json(result);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Failed to fetch categories" }, { status: 500 });
