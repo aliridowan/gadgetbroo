@@ -5,6 +5,8 @@ import { Loader2, User, Send, Trash2, Edit2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useAuthSession } from "@/components/auth/AuthSessionProvider";
+import Link from "next/link";
+import { Button } from "../ui/button";
 
 type CommentWithUser = {
   id: string;
@@ -27,7 +29,7 @@ export default function ProductCommentsClient({ productId }: { productId: string
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  
+
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -46,10 +48,10 @@ export default function ProductCommentsClient({ productId }: { productId: string
       } else {
         setLoadingMore(true);
       }
-      
+
       const res = await fetch(`/api/comments?productId=${productId}&page=${pageToFetch}&limit=5`);
       const data = await res.json();
-      
+
       if (data.success) {
         if (reset) {
           setComments(data.data);
@@ -137,13 +139,13 @@ export default function ProductCommentsClient({ productId }: { productId: string
   return (
     <div className="mt-16 lg:mt-24 border-t border-border pt-12">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        
+
         {/* Left Side: Post Comment */}
         <div className="space-y-6">
           <div>
             <h2 className="text-2xl font-bold text-foreground mb-2">Q&A / Comments</h2>
             <p className="text-sm text-muted-foreground">
-              Have a question or feedback? Leave a comment below. 
+              Have a question or feedback? Leave a comment below.
             </p>
           </div>
 
@@ -153,9 +155,13 @@ export default function ProductCommentsClient({ productId }: { productId: string
                 <ShieldAlert className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
                 <h3 className="text-muted-foreground font-semibold mb-2">Login Required</h3>
                 <p className="text-sm text-muted-foreground mb-4">You must be logged in to post a comment securely.</p>
-                <a href="/login" className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors">
-                  Login to Comment
-                </a>
+
+                <Button asChild className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg text-sm font-medium transition-colors">
+                  <Link href="/sign-in">
+                    Login to Comment
+                  </Link>
+                </Button>
+
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -165,7 +171,7 @@ export default function ProductCommentsClient({ productId }: { productId: string
                   </div>
                   <span className="text-sm font-medium text-muted-foreground">{user.name}</span>
                 </div>
-                
+
                 <div>
                   <textarea
                     required
@@ -284,7 +290,7 @@ export default function ProductCommentsClient({ productId }: { productId: string
                   )}
                 </div>
               ))}
-              
+
               {hasMore && (
                 <div className="flex justify-center pt-4">
                   <button
