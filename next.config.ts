@@ -31,6 +31,8 @@ const nextConfig: NextConfig = {
       // subdomain since Google serves these from lh1-lh6.googleusercontent.com
       // depending on account/region, not a single fixed host.
       { protocol: "https", hostname: "*.googleusercontent.com" },
+      { protocol: "https", hostname: "www.startech.com.bd" },
+      { protocol: "https", hostname: "gadgetbreeze.com.bd" },
     ],
   },
 };
