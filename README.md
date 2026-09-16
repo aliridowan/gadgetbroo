@@ -2,9 +2,9 @@
 
 ## 1. Project Overview
 
-Gadgetbroo is a complete, production-ready full-stack e-commerce web application. It represents an online retail business selling electronics and gadgets. 
+Gadgetbroo is a complete, production-ready full-stack e-commerce web application. It represents an online retail business selling electronics and gadgets.
 
-The main users of this system are **customers** (who browse, add items to their cart, and place orders) and **administrators** (who manage inventory, process orders, and control website content). 
+The main users of this system are **customers** (who browse, add items to their cart, and place orders) and **administrators** (who manage inventory, process orders, and control website content).
 
 The main problem this application solves is providing a unified, fast, and secure platform to handle the entire lifecycle of an online sale—from product discovery to inventory management to final checkout—without relying on external monolithic platforms like Shopify.
 
@@ -12,7 +12,7 @@ The main problem this application solves is providing a unified, fast, and secur
 
 ## 2. What I Built
 
-From a developer's perspective, I built a complete end-to-end web system. I did not use a CMS or a website builder. Instead, I architected the database, built the backend API, designed the frontend user interface, implemented role-based access control, and configured the deployment pipeline. 
+From a developer's perspective, I built a complete end-to-end web system. I did not use a CMS or a website builder. Instead, I architected the database, built the backend API, designed the frontend user interface, implemented role-based access control, and configured the deployment pipeline.
 
 I focused heavily on creating an application where business logic is strictly separated, data is validated securely on the server, and the user interface feels incredibly fast using modern React paradigms.
 
@@ -21,6 +21,7 @@ I focused heavily on creating an application where business logic is strictly se
 ## 3. Key Features
 
 ### Customer Features
+
 * **Authentication:** Secure login and registration.
 * **Product Catalog:** Browsing products with support for multiple variants (e.g., color, storage).
 * **Hybrid Cart System:** Instant client-side cart that syncs with the server.
@@ -30,6 +31,7 @@ I focused heavily on creating an application where business logic is strictly se
 * **Address Book:** Saving and managing delivery addresses.
 
 ### Admin Features
+
 * **Role-Based Access Control (RBAC):** Restrict access based on specific permissions (View/Create/Update/Delete).
 * **Product Management:** Full CRUD operations for products and their variants.
 * **Order Processing:** Updating order statuses and adding admin notes.
@@ -94,6 +96,7 @@ scripts/            # Deployment and CI/CD bash scripts
 ## 7. How the Application Works (Flow)
 
 **Example: Viewing a Product**
+
 1. The user navigates to `/product/iphone-15`.
 2. Next.js receives the request on the server.
 3. The server uses Prisma to query the `Product` table, including its related `ProductVariant`, `ProductImage`, and `Review` records.
@@ -105,7 +108,7 @@ scripts/            # Deployment and CI/CD bash scripts
 ## 8. Authentication & Authorization
 
 * **Authentication (Who are you?):** Handled by **BetterAuth**. When a user logs in, their password is verified against a securely hashed version in the database. A secure, HTTP-only session cookie is issued to the browser.
-* **Authorization (What are you allowed to do?):** Handled by a custom **Role-Based Access Control (RBAC)** system. Users are assigned a `Role` (e.g., Customer, Admin). Roles have specific `Permissions` (e.g., `canCreateProduct`, `canDeleteOrder`). 
+* **Authorization (What are you allowed to do?):** Handled by a custom **Role-Based Access Control (RBAC)** system. Users are assigned a `Role` (e.g., Customer, Admin). Roles have specific `Permissions` (e.g., `canCreateProduct`, `canDeleteOrder`).
 * Before a protected backend action occurs, the server explicitly checks if the user's active session possesses the required permission.
 
 ---
@@ -126,6 +129,7 @@ The database is highly relational to ensure data integrity.
 ## 10. Product & Variant System
 
 Products are not flat. The application models products with a parent-child relationship:
+
 * **Product (Parent):** Contains shared data like the Name, Description, and Brand.
 * **Variant (Child):** Contains specific data like the SKU, Price, Stock level, and specific attributes (e.g., "Storage: 256GB, Color: Blue").
 
@@ -136,6 +140,7 @@ Products are not flat. The application models products with a parent-child relat
 ## 11. Cart System
 
 The cart is a **hybrid system**:
+
 * **Client-side:** Managed by `Zustand` and persisted in `localStorage`. This makes adding items feel instantaneous and allows guest users to have a cart.
 * **Server-side:** A background sync sends the cart data to the `/api/cart/sync` endpoint. If the user is logged in, the cart is saved to the PostgreSQL database. If they log in from another device, their cart follows them.
 
@@ -145,7 +150,7 @@ The cart is a **hybrid system**:
 
 1. **Validation:** When the user checks out, the server re-calculates the total by checking the *actual* database prices (preventing malicious users from altering prices in the browser).
 2. **Stock Check:** The system verifies there is enough inventory for the selected variants.
-3. **Snapshotting:** When an `OrderItem` is created, it saves the `priceAtOrder`, `productName`, and `variantName` as text fields. 
+3. **Snapshotting:** When an `OrderItem` is created, it saves the `priceAtOrder`, `productName`, and `variantName` as text fields.
 4. **Order Creation:** The order is marked as `PENDING`.
 5. **Inventory Update:** Stock is decreased to prevent overselling.
 
@@ -156,6 +161,7 @@ The cart is a **hybrid system**:
 ## 13. Admin Dashboard
 
 The admin dashboard (`/admin`) is completely isolated from the public store. It allows authorized staff to:
+
 * Manage the product catalog and adjust variant stock.
 * Process incoming orders (update status to Shipped/Delivered).
 * Upload and manage assets in the Media Library (S3 CDN).
@@ -167,22 +173,19 @@ The admin dashboard (`/admin`) is completely isolated from the public store. It 
 ## 14. Security
 
 ### Implemented Practices
+
 * **Server-Side Validation:** All API requests are validated with **Zod** before touching the database. This prevents bad data and NoSQL/SQL injection attacks.
 * **HTTP-Only Cookies:** Session tokens cannot be accessed by malicious JavaScript (preventing XSS session theft).
 * **Strict RBAC:** Every admin endpoint verifies permissions, preventing privilege escalation.
 * **Price Recalculation:** The server never trusts the cart total sent by the client; it recalculates it using database truths.
 * **Environment Variables:** Secrets (DB passwords, API keys) are never exposed to the browser.
 
-### Recommended Improvements (For Production Scale)
-* Implement strict CSRF (Cross-Site Request Forgery) tokens for form submissions.
-* Move the rate-limiting system to an in-memory datastore like Redis instead of the SQL database to prevent database exhaustion under a DDoS attack.
-
 ---
 
 ## 15. Validation & Error Handling
 
 * **Client-Side:** Forms use `react-hook-form` + `zod` to provide instant feedback to the user (e.g., "Email is required").
-* **Server-Side:** The backend uses `zod` again. *Why?* Because a malicious user can bypass the frontend using tools like Postman. The server must act as the final wall of defense.
+* **Server-Side:** The backend uses `zod` again. *Why?* Because a malicious user can bypass the frontend using tools like Postman or burpsuite. The server must act as the final wall of defense.
 * **Error Handling:** If validation fails, the API returns a `400 Bad Request` with specific field errors. The frontend catches this and displays a user-friendly Toast notification.
 
 ---
@@ -202,6 +205,7 @@ The backend follows a standard request lifecycle via Next.js Route Handlers:
 `Request → Auth Check (RBAC) → Payload Validation (Zod) → Database Query (Prisma) → JSON Response`
 
 For example, the Media Upload API:
+
 1. Verifies the user has the `canCreate` Media permission.
 2. Contacts the S3 Bucket service to generate a secure "Presigned URL".
 3. Returns the URL to the frontend, allowing the frontend to upload the file directly to the CDN without clogging the application server bandwidth.
@@ -211,15 +215,18 @@ For example, the Media Upload API:
 ## 18. Important Engineering Decisions
 
 ### Decision: Using Presigned URLs for S3 Uploads
+
 * **Why:** Instead of sending large image files to my Next.js server and then forwarding them to the CDN, the server gives the frontend a secure, temporary ticket (Presigned URL) to upload directly to the CDN.
 * **Problem Solved:** Prevents memory spikes and bandwidth bottlenecks on the application server.
 * **Trade-off:** slightly more complex frontend logic to handle the two-step upload process.
 
 ### Decision: Order Item Snapshotting
+
 * **Why:** Saving the string name and price directly on the `OrderItem` row instead of purely relying on relational joins to the `Product` table.
 * **Problem Solved:** Ensures historical accuracy of receipts if product details change or if a product is completely deleted from the database later.
 
 ### Decision: Separating Variants from Products
+
 * **Why:** Creating a dedicated `ProductVariant` table.
 * **Problem Solved:** A product might have 5 colors. If we only had a `Product` table, we couldn't accurately track which specific color sold out. This design solves inventory accuracy.
 
@@ -244,11 +251,12 @@ For example, the Media Upload API:
 
 ## 21. Scalability
 
-If the application grew from 100 users to 1,000,000 users, the current architecture would face bottlenecks. 
+If the application grew from 100 users to 1,000,000 users, the current architecture would face bottlenecks.
 
 **Current limitations:** The PostgreSQL database handles everything (auth, products, analytics, rate limiting). Under massive load, the database connections would max out.
 
 **How I would scale it:**
+
 1. Move the Cart and Rate Limiting to **Redis** (an in-memory datastore).
 2. Implement **Database Connection Pooling** (like PgBouncer).
 3. Use a **Message Queue** (like RabbitMQ) for background tasks (e.g., sending order confirmation emails) so the main thread isn't blocked.
@@ -258,6 +266,7 @@ If the application grew from 100 users to 1,000,000 users, the current architect
 ## 22. Deployment
 
 The application is deployed using a custom CI/CD pipeline.
+
 * The Next.js application is built in `standalone` mode, which heavily optimizes the output size.
 * It is hosted on a Linux VPS.
 * **PM2** is used as the process manager to keep the Node server running and automatically restart it if it crashes.
@@ -269,73 +278,15 @@ The application is deployed using a custom CI/CD pipeline.
 ## 23. Challenges & Solutions
 
 ### Problem: EADDRINUSE (Port Conflict) During Deployment
+
 During deployment, the health check script kept failing because PM2 was attempting to start the server on a port that was already busy.
-### Solution:
+
+### Solution
+
 I identified that Next.js standalone mode was overriding the environment variables via a hardcoded `server.js` file. I rewrote the entry point to dynamically accept ports (`process.env.PORT || '2323'`) and updated the server's bash script to ping the correct port.
+
 ### Why this solution?
+
 Hardcoding ports is a bad practice. By making it dynamic, the application can now be safely spun up on any available port in the future without changing the core codebase.
 
 ---
-
-## 24. Example User Journey
-
-1. **Discovery:** User visits the homepage (rendered instantly on the server).
-2. **Selection:** User navigates to a product, selects the "256GB" variant, and clicks "Add to Cart".
-3. **Cart Sync:** Zustand updates the UI instantly, and a background request saves the cart to Postgres.
-4. **Checkout:** User enters shipping details. The server calculates fees based on the `ShippingZone` table.
-5. **Purchase:** User places the order.
-6. **Fulfillment:** The server verifies prices, deducts inventory, creates the `Order` and `OrderItem` records, and logs the event.
-7. **Admin View:** An admin logs into the dashboard, sees the new order, packs it, and updates the status to `SHIPPED`.
-
----
-
-## 25. How I Would Explain This Project in an Interview
-
-> "I built a complete, production-ready full-stack e-commerce platform from scratch using Next.js, TypeScript, and PostgreSQL. The goal was to engineer a system that handles the entire retail lifecycle without relying on a pre-built CMS like Shopify.
->
-> On the frontend, I used React Server Components to make the public storefront extremely fast and SEO-friendly, while using Zustand for a snappy, client-side shopping cart. 
->
-> On the backend, I designed a highly relational database schema using Prisma. I spent a lot of time on business logic—for example, separating products from variants to ensure accurate inventory tracking, and taking data snapshots of prices at the time of checkout so historical receipts don't break if a product's price changes later.
-> 
-> Security was a major focus. I implemented a strict Role-Based Access Control system to protect the admin dashboard, and I ensured that all client requests are strictly validated on the server using Zod before they ever touch the database. Finally, I set up a custom deployment pipeline on a Linux VPS using PM2 to keep the application running continuously."
-
----
-
-## 26. Technical Interview Questions
-
-### Beginner
-**Q: Why did you use Zod for validation when HTML forms already have `required` attributes?**
-*Answer:* HTML validation can easily be bypassed by a user editing the DOM or sending a request via Postman. Zod ensures that the server acts as a final wall of defense to prevent bad data from crashing the database.
-
-### Intermediate
-**Q: How does your shopping cart work for a user who isn't logged in?**
-*Answer:* I used a hybrid approach. The cart state is managed globally on the client side using Zustand and persisted in `localStorage`. This allows guest users to have a cart instantly. When they log in, a background sync pushes that local data to the database.
-
-### Advanced
-**Q: I see you allow users to upload images. How do you handle file uploads without slowing down your Next.js application server?**
-*Answer:* Instead of sending the image data through my Next.js server, my API generates a temporary, secure "Presigned URL" using the AWS S3 SDK. I send that URL back to the frontend, and the frontend uploads the heavy image bytes directly to the CDN. This saves my application server's bandwidth and memory.
-
----
-
-## 27. Potential Weaknesses
-
-* **Database-Heavy Analytics:** Currently, page views and analytics events are written directly to the PostgreSQL database. In a high-traffic scenario, this will cause heavy write-locks and slow down the primary database. 
-  * *Improvement:* Move analytics ingestion to a lightweight, fast-write database like ClickHouse, or use a Message Queue to process them asynchronously.
-* **No Database Transactions for Checkout:** If the system deducts inventory but fails to create the final order record due to a network error, the stock is permanently lost.
-  * *Improvement:* Wrap the entire checkout flow in a Prisma `$transaction` so that if any step fails, the entire database rolls back to its previous state.
-
----
-
-## 28. Future Improvements
-
-### Short-term
-* Implement a robust search feature using fuzzy matching or full-text search in PostgreSQL.
-* Wrap the checkout and inventory deduction logic in strict database transactions.
-
-### Medium-term
-* Implement a Redis caching layer for the product catalog to reduce the load on the database during traffic spikes.
-* Add comprehensive automated End-to-End (E2E) testing using Playwright.
-
-### Large-scale production improvements
-* Separate the architecture into microservices (e.g., move the Admin Dashboard to its own deployment).
-* Implement Read-Replicas for the database so that public users browsing the store don't impact the performance of admins running heavy sales reports.
