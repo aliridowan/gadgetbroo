@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -71,7 +70,7 @@ export default function MobileNav({ bannerUrl, faviconUrl }: MobileNavProps) {
 
       {/* Mobile Drawer */}
       {isOpen && mounted && createPortal(
-        <div className="fixed inset-0 z-[100] flex md:hidden">
+        <div className="fixed inset-0 z-100 flex md:hidden">
           {/* Backdrop */}
           <div 
             className="fixed inset-0 bg-black/60 backdrop-blur-sm"

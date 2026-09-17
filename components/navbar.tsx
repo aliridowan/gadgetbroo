@@ -1,4 +1,3 @@
-
 import Link from 'next/link';
 import Image from 'next/image';
 import { getServerSession } from '../helpers/get-servesession';
@@ -18,7 +17,7 @@ export default async function Navbar() {
 
   let fullUser = null;
   let hasAdminAccess = false;
-  
+
   if (user?.id) {
     fullUser = await prisma.user.findUnique({
       where: { id: user.id },
@@ -44,7 +43,6 @@ export default async function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl shadow-sm">
       <div className="w-full flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
 
-        {/* Logo and Mobile Nav */}
         {/* Logo and Mobile Nav */}
         <div className="flex items-center gap-6">
           <MobileNav bannerUrl={settings?.bannerUrl} faviconUrl={settings?.faviconUrl} />
@@ -117,8 +115,8 @@ export default async function Navbar() {
                     <DropdownMenuItem asChild className="hover:bg-muted cursor-pointer focus:bg-muted">
                       <Link href="/admin" className="flex items-center gap-2">
                         <LayoutDashboard size={14} className="text-primary" />
-                        {fullUser?.role?.name?.toLowerCase() === 'admin' 
-                          ? 'Admin Dashboard' 
+                        {fullUser?.role?.name?.toLowerCase() === 'admin'
+                          ? 'Admin Dashboard'
                           : `${(fullUser?.role?.name || '').charAt(0).toUpperCase() + (fullUser?.role?.name || '').slice(1)} Dashboard`}
                       </Link>
                     </DropdownMenuItem>
