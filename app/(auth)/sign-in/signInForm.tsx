@@ -57,7 +57,6 @@ export function SignInForm() {
   });
 
   async function onSubmit({ email, password, rememberMe }: SignInValues) {
-    // TODO: Handle sign in
 
     setError(null)
     setLoading(true)
